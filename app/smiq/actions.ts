@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { getDb } from "@/lib/db";
 import { smiqResponses, pendingSmiqSubmissions } from "@/db/schema";
 import { subscribeToKit } from "@/lib/kit";
-import { sendConfirmationEmail } from "@/lib/email";
+import { sendConfirmationEmail, sendOwnerNotification } from "@/lib/email";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { SEGMENTS, TEACHING_ROLES, GRADUATION_LEVELS, LANGUAGES } from "@/lib/reference-data";
 
@@ -191,6 +191,19 @@ export async function confirmResponse(token: string): Promise<{ ok: boolean }> {
         graduationLevel: row.graduationLevel,
         lang: row.lang,
       }).catch((err) => console.error("[kit]", err))
+    );
+
+    after(() =>
+      sendOwnerNotification({
+        name: row.name,
+        email: row.email,
+        segment: row.segment,
+        smiqAnswer: row.smiqAnswer,
+        teachingRole: row.teachingRole,
+        graduationLevel: row.graduationLevel,
+        lang: row.lang,
+        createdAt: new Date(),
+      }).catch((err) => console.error("[email:owner-notification]", err))
     );
 
     return { ok: true };
